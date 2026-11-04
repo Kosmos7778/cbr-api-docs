@@ -21,6 +21,12 @@ info:
 
     **Номинал важен.** Значения `Value`/`Previous` — рублей за `Nominal` единиц валюты.
     У йены `Nominal = 100`, у вон — `1000`: делите на номинал, если нужен курс за единицу.
+
+    **Content-Type: application/javascript.** Все три файла — «.js»-файлы, поэтому сервис
+    отдаёт их с заголовком `application/javascript`, а не `application/json`. Внутри при
+    этом валидный JSON — клиенту достаточно обычного `JSON.parse`. В Swagger UI тело
+    такого ответа отображается как текст с пометкой «Unrecognized response type» —
+    это ожидаемое поведение, а не ошибка.
   contact:
     name: Источник данных cbr-xml-daily.ru
     url: https://www.cbr-xml-daily.ru/
