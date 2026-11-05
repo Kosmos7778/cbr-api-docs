@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Курсы валют ЦБ РФ — документация API</title>
+  <style>
+    body { margin: 0; font-family: -apple-system, 'Segoe UI', 'Liberation Sans', Roboto, Arial, sans-serif; background: #f5f8fc; color: #142840; }
+    header { background: #142840; color: #fff; padding: 28px 32px; }
+    header .brand { font-size: 20px; font-weight: 600; }
+    header .meta { color: #9fb8ce; font-size: 13px; margin-top: 6px; }
+    main { max-width: 840px; margin: 40px auto; padding: 0 24px; }
+    h1 { font-size: 22px; margin: 0 0 8px; }
+    p.lead { color: #4a5b6d; margin: 0 0 32px; line-height: 1.55; }
+    .cards { display: flex; gap: 20px; flex-wrap: wrap; }
+    a.card { flex: 1 1 300px; background: #fff; border: 1px solid #dbe4ee; border-radius: 10px; padding: 22px; text-decoration: none; color: #142840; display: block; transition: box-shadow .15s, transform .15s; }
+    a.card:hover { box-shadow: 0 6px 18px rgba(20,40,64,.12); transform: translateY(-2px); }
+    .card h2 { margin: 0 0 8px; font-size: 17px; }
+    .card p { margin: 0; color: #4a5b6d; font-size: 14px; line-height: 1.5; }
+    .card .tag { display: inline-block; margin-bottom: 10px; font-size: 12px; font-weight: 600; color: #0b6bcb; background: #e8f1fb; border-radius: 999px; padding: 3px 10px; }
+    footer { max-width: 840px; margin: 36px auto 48px; padding: 0 24px; color: #7b8a99; font-size: 13px; line-height: 1.6; }
+    footer a { color: #0b6bcb; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="brand">Курсы валют ЦБ РФ</div>
+  <div class="meta">OpenAPI 3.1 · GitHub Pages · данные и эндпоинты проверены вживую на cbr-xml-daily.ru</div>
+</header>
+<main>
+  <h1>Документация API курсов валют ЦБ РФ</h1>
+  <p class="lead">
+    Спецификация OpenAPI 3.1 для JSON-зеркала котировок Банка России: 4 эндпоинта —
+    актуальные курсы, JSONP-обёртка, архив за дату, формат money.js. Выберите рендер:
+  </p>
+  <div class="cards">
+    <a class="card" href="swagger-ui.html">
+      <span class="tag">Интерактивная</span>
+      <h2>Swagger UI</h2>
+      <p>Запросы отправляются прямо со страницы: кнопка Try it out, живые ответы API с реальными курсами валют.</p>
+    </a>
+    <a class="card" href="redoc.html">
+      <span class="tag">Статичная</span>
+      <h2>Redoc</h2>
+      <p>Справка для чтения: схемы, подписанные примеры ответов и ловушки — номинал, строковый NumCode, JSON-ошибка 404 архива.</p>
+    </a>
+  </div>
+</main>
+<footer>
+  Демо-проект из портфолио технического писателя: показывает, как может выглядеть документация
+  вашего API. Больше примеров — в профиле <a href="https://github.com/Kosmos7778">@Kosmos7778</a>.
+</footer>
+</body>
+</html>

@@ -1,11 +1,12 @@
 # OpenAPI 3.1 спецификация: официальные курсы валют ЦБ РФ
-# Портфолио-пример технического писателя. Данные и эндпоинты проверены вживую
-# 05.11.2026 на сервисе cbr-xml-daily.ru (зеркало данных Банка России).
+# Портфолио-пример технического писателя. Данные, эндпоинты, JSONP-обёртка и формат
+# 404-ответа архива проверены вживую 05.11.2026 на сервисе cbr-xml-daily.ru
+# (зеркало данных Банка России).
 # Проверка валидности: npx @redocly/cli lint openapi-cbr.yaml
 openapi: 3.1.0
 info:
   title: Курсы валют ЦБ РФ
-  version: 1.0.0
+  version: 1.1.0
   summary: Официальные курсы валют Банка России в JSON
   description: |
     Неофициальное JSON-зеркало [данных Банка России](https://www.cbr.ru/) на базе сервиса
@@ -22,11 +23,14 @@ info:
     **Номинал важен.** Значения `Value`/`Previous` — рублей за `Nominal` единиц валюты.
     У йены `Nominal = 100`, у вон — `1000`: делите на номинал, если нужен курс за единицу.
 
-    **Content-Type: application/javascript.** Все три файла — «.js»-файлы, поэтому сервис
-    отдаёт их с заголовком `application/javascript`, а не `application/json`. Внутри при
-    этом валидный JSON — клиенту достаточно обычного `JSON.parse`. В Swagger UI тело
-    такого ответа отображается как текст с пометкой «Unrecognized response type» —
-    это ожидаемое поведение, а не ошибка.
+    **Content-Type: application/javascript.** Все «.js»-файлы сервиса отдаются с заголовком
+    `application/javascript`, а не `application/json`. Внутри при этом валидный JSON —
+    клиенту достаточно обычного `JSON.parse`. В Swagger UI тело такого ответа отображается
+    как текст с пометкой «Unrecognized response type» — это ожидаемое поведение, а не ошибка.
+
+    **JSONP для страниц без CORS.** Файл `daily_jsonp.js` оборачивает те же данные в вызов
+    фиксированной функции `CBR_XML_Daily_Ru({...})` — страницу достаточно подключить тегом
+    `<script>`. Произвольное имя колбэка (`?callback=...`) сервис не поддерживает.
   contact:
     name: Источник данных cbr-xml-daily.ru
     url: https://www.cbr-xml-daily.ru/
@@ -88,6 +92,52 @@ paths:
                         Previous: 90.4635
         '500':
           $ref: '#/components/responses/ServerError'
+  /daily_jsonp.js:
+    get:
+      tags: [Курсы]
+      operationId: getLatestRatesJsonp
+      summary: Те же курсы в формате JSONP — вставка через <script>
+      description: |
+        Тело ответа — не JSON, а JavaScript-вызов фиксированной функции
+        `CBR_XML_Daily_Ru(...)` с JSON-котировками внутри. Данные идентичны
+        `daily_json.js`, отличается только обёртка.
+
+        Зачем нужен JSONP. Запрос к стороннему домену из браузера блокирует CORS,
+        а тег `<script>` этого ограничения не имеет: страница объявляет глобальную
+        функцию `CBR_XML_Daily_Ru`, подключает файл — и котировки приходят в неё
+        без AJAX-запроса. Функция должна существовать до загрузки скрипта.
+
+        Имя колбэка фиксировано (сервис сам пишет это в комментарии первой строкой
+        файла). Параметр `?callback=myFn` не поддерживается — такой запрос сервер
+        отклоняет редиректом.
+      responses:
+        '200':
+          description: Вызов CBR_XML_Daily_Ru с котировками последнего торгового дня
+          content:
+            application/javascript:
+              schema:
+                type: string
+                description: |
+                  JavaScript-код `CBR_XML_Daily_Ru(<данные>)`. Объект внутри вызова имеет
+                  ту же структуру, что ответ `daily_json.js` (см. схему DailyRates), —
+                  один обработчик обслуживает оба формата.
+                example: |
+                  /* Название функции всегда одно и то же */
+                  CBR_XML_Daily_Ru({
+                    "Date": "2026-11-04T11:30:00+03:00",
+                    "PreviousDate": "2026-11-03T11:30:00+03:00",
+                    "PreviousURL": "//www.cbr-xml-daily.ru/archive/2026/11/03/daily_json.js",
+                    "Timestamp": "2026-11-04T20:00:00+03:00",
+                    "Valute": {
+                      "USD": {
+                        "ID": "R01235", "NumCode": "840", "CharCode": "USD",
+                        "Nominal": 1, "Name": "Доллар США",
+                        "Value": 81.6699, "Previous": 80.9734
+                      }
+                    }
+                  });
+        '500':
+          $ref: '#/components/responses/ServerError'
   /archive/{year}/{month}/{day}/daily_json.js:
     get:
       tags: [Курсы]
@@ -97,6 +147,10 @@ paths:
         Котировки за дату в формате `{ГГГГ}/{ММ}/{ДД}` — месяц и день с ведущим нулём.
         Ответ имеет ту же структуру, что и актуальный, поэтому один парсер обслуживает
         оба сценария. Архивные даты удобно брать из поля `PreviousURL` прошлого ответа.
+
+        Курсы установлены не в каждый календарный день: суббота 31.10.2026 в архиве есть,
+        а воскресенье 01.11.2026 — нет. Если данных за дату нет, сервис отвечает
+        JSON-ошибкой 404 (см. ответ ниже), а не пустым телом.
       parameters:
         - $ref: '#/components/parameters/Year'
         - $ref: '#/components/parameters/Month'
@@ -125,11 +179,21 @@ paths:
                         Value: 80.6761
                         Previous: 80.8664
         '404':
-          description: Нет данных за дату — выходные, праздник или дата в будущем
+          description: |
+            На эту дату котировки не установлены: дата в будущем, до 1992 года либо день
+            без котировок. Поле `explanation` уже на русском — ответ можно показывать
+            пользователю как есть.
           content:
-            text/html:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/ArchiveError'
+              examples:
+                notFound:
+                  summary: Реальный ответ за дату без котировок
+                  value:
+                    error: Not found
+                    code: 404
+                    explanation: "Курс ЦБ РФ на данную дату не установлен или указана ошибочная дата. Проверить: https://www.cbr.ru/currency_base/daily/"
         '500':
           $ref: '#/components/responses/ServerError'
   /latest.js:
@@ -303,6 +367,27 @@ components:
           additionalProperties:
             type: number
             format: double
+    ArchiveError:
+      type: object
+      title: Дата без котировок
+      description: |
+        Ошибка запроса архива. Возникает и на даты в будущем, и на дни, когда
+        ЦБ РФ не устанавливал курс. Тело всегда JSON — парсеру не нужен отдельный
+        путь обработки «пустого ответа».
+      required: [error, code, explanation]
+      properties:
+        error:
+          type: string
+          description: Машинный код ошибки
+          example: Not found
+        code:
+          type: integer
+          description: HTTP-статус, продублированный в теле
+          example: 404
+        explanation:
+          type: string
+          description: Причина по-русски — готовый текст для интерфейса
+          example: "Курс ЦБ РФ на данную дату не установлен или указана ошибочная дата. Проверить: https://www.cbr.ru/currency_base/daily/"
     Error:
       type: object
       required: [message]
